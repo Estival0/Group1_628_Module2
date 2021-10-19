@@ -10,6 +10,6 @@ What is more, we also upload our shiny APP code in the file of Group1App. If you
 And we give the two pages summary to summarize what we do and what we find in 628_module2_Summary_Group1.pdf. It describes how we choose model, what we can do with our model, and the strength and weakness of our model.
 
 If you have any problems with our work, you could connect us by the github or the information of our group member:
-Qizheng Xia, e-mail: qxia25@wisc.edu
-Jinghao Liu, e-mail: jliu975@wisc.edu
+Qizheng Xia, e-mail: qxia25@wisc.edu;
+Jinghao Liu, e-mail: jliu975@wisc.edu;
 MARIT BEVERLIE MCQUAIG, e-mail: mcquaig@wisc.edu
