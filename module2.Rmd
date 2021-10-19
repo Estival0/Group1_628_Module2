@@ -1,0 +1,298 @@
+---
+title: "628 module 2"
+subtitle: "STAT 628"
+author: "Group 1"
+date: "Oct. 18, 2021"
+output:
+ html_document:
+   df_print: paged
+   toc: true
+   toc_depth: 3
+   number_sections: false
+   theme: default
+   highlight: tango
+   toc_float:
+     collapsed: true
+     smooth_scroll: true
+geometry: left = 3.18cm, right = 3.18cm, top = 2.0cm, bottom = 2.0cm
+fontsize: 12pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache=TRUE, error=FALSE, message=FALSE, warning=FALSE, tidy=FALSE)
+options(scipen=999)
+```
+
+
+
+```{r}
+library(car)
+library(ggm)
+library(corpcor)
+library(nlme)
+library(ggplot2)
+```
+
+## Data cleaning
+
+```{r}
+data <- read.csv("BodyFat.csv")
+summary(data)
+```
+
+Two observations have implausible body fat values: 172 and 182
+
+```{r}
+data[data[,"BODYFAT"] < 3,]
+```
+
+Five observations have incorrect density or body fat measurements based on Siri's equation: 48, 76, 96, 182, 216
+
+```{r}
+data$SIRIS_ERROR = (495/data$DENSITY)-450 - data$BODYFAT
+data[abs(data[,"SIRIS_ERROR"]) > 2,]
+```
+
+
+BMI is weight/height^2 * 703
+
+Three rows have incorrect BMI, weight, or height: 42, 163, 221
+
+```{r}
+data$BMI_ERROR = data$WEIGHT/((data$HEIGHT)^2)*703 - data$ADIPOSITY
+data[abs(data[,"BMI_ERROR"]) > 2,]
+```
+
+Nine rows need to be replaced or imputated: 42, 48, 76, 96, 163, 172, 182, 216, 221
+Since this is only 3.6% of the data and it seems to be inaccurate at random, we'll simply remove these rows. 
+
+
+```{r}
+newdata = data[-c(42, 48, 76, 96, 163, 172, 182, 216, 221), ]
+newdata = subset(newdata, select = -c(SIRIS_ERROR,BMI_ERROR))
+newdata
+```
+
+Writing the cleaned up data to a csv:
+
+```{r}
+write.csv(newdata, "bodyfat_cleaned.csv")
+```
+
+## Deal with data
+
+```{r}
+# read the data 
+BodyFat_clean <- read.csv('bodyfat_cleaned.csv',sep = ',')
+BodyFat_clean <- BodyFat_clean[,c(3,5:18)]
+```
+
+
+
+```{r}
+# look the data
+head(BodyFat_clean)
+tail(BodyFat_clean)
+
+summary(BodyFat_clean)
+```
+
+
+```{r}
+# plot multi-scatterplot
+scatterplotMatrix(BodyFat_clean)
+
+# correlation
+cor(BodyFat_clean)
+
+# partial correlation
+cor2pcor(cor(BodyFat_clean))
+
+```
+
+
+```{r}
+# divide age into group varible
+AGE.GROUP <- NULL
+
+for (i in 1:length(BodyFat_clean$AGE)) {
+  if (BodyFat_clean$AGE[i] < 30) {
+    AGE.GROUP[i] <- 1
+  }
+  else if (BodyFat_clean$AGE[i] > 60){
+    AGE.GROUP[i] <- 2
+  }
+  else{
+    AGE.GROUP[i] <- 3
+  }
+}
+
+AGE.GROUP <- as.factor(AGE.GROUP)
+
+BodyFat_clean <- cbind(BodyFat_clean,AGE.GROUP)
+```
+
+
+
+
+
+
+## Rule of Thumb
+
+1. With larger R2, the model is better
+2. The number of parameters in the model is usually not greater than 5.
+
+## Fit models
+
+```{r}
+# fit models
+attach(BodyFat_clean)
+
+#based on correlation
+m1 <- lm(BODYFAT~ ABDOMEN)
+summary(m1)
+
+m2 <- lm(BODYFAT~ ABDOMEN + ADIPOSITY + CHEST)
+summary(m2)
+
+#based on partial correlation
+m3 <- lm(BODYFAT~ AGE  + ADIPOSITY + ABDOMEN+ CHEST + WRIST)
+summary(m3)
+
+m4 <- lm(BODYFAT~ AGE  + log(ADIPOSITY) + log(ABDOMEN) + log(CHEST) + log(WRIST))
+summary(m4)
+
+m5 <- lm(BODYFAT~ AGE  + log(ABDOMEN) + log(WRIST))
+summary(m5)
+
+m6 <- lm(BODYFAT ~ AGE.GROUP +  log(ABDOMEN) + log(WRIST),data = BodyFat_clean)
+summary(m6)
+detach(BodyFat_clean)
+```
+
+Compare all the models, m6 has the large R2, and just have three variables.
+
+
+## Visualizing
+
+```{r}
+# Visualizing multiple linear regression models
+
+ggplot(subset(subset(BodyFat_clean,AGE.GROUP  == 1)),aes(y=BODYFAT,x=log(ABDOMEN),color=log(WRIST)))+geom_point()+stat_smooth(method="lm",se=TRUE)
+
+ggplot(subset(subset(BodyFat_clean,AGE.GROUP  == 2)),aes(y=BODYFAT,x=log(ABDOMEN),color=log(WRIST)))+geom_point()+stat_smooth(method="lm",se=TRUE)
+
+ggplot(subset(subset(BodyFat_clean,AGE.GROUP  == 3)),aes(y=BODYFAT,x=log(ABDOMEN),color=log(WRIST)))+geom_point()+stat_smooth(method="lm",se=TRUE)
+
+```
+
+
+## Robust
+
+```{r}
+## test the robust of model
+
+# Divide the data
+n <- nrow(BodyFat_clean)
+mark <- rep(FALSE, n)
+mark[sample(n, round(2*n/3))] <- TRUE
+training.set <- BodyFat_clean[mark, ]
+test.set <- BodyFat_clean[!mark, ]
+
+m <- lm(BODYFAT ~ AGE.GROUP +  log(ABDOMEN) + log(WRIST),data = training.set)
+summary(m)
+
+# test the model
+test <- predict(m,test.set)
+
+R2 <- 1 - sum((test.set$BODYFAT - test)^2)/sum((test.set$BODYFAT - mean(test.set$BODYFAT))^2)
+R2.adj <- 1 -  (1 - R2 ) * (nrow(test.set)-1)/(nrow(test.set) - length(test.set) - 1)
+
+R2
+R2.adj
+```
+
+
+
+
+## Diagnosis the data
+
+```{r}
+
+stu.residual <- rstudent(m6)
+
+# normality
+qqPlot(stu.residual , main="qq plot", col="blue", col.lines="red",xlab = "Theoretical Quantiles",ylab = "Student residual")
+
+# equal variance and linearity
+ggplot( mapping = aes(x = m6$fitted.values, y = stu.residual)) + geom_point() + geom_line(y = 0,col = "red") + labs(x = "fitted.values",y= "Student residual")
+
+# outiler
+cook <- cooks.distance(m6)
+head(sort(cook,decreasing = TRUE)) # Rule of Thumb is to compare cook distance with 1
+
+# independece
+ggplot( mapping = aes(y = stu.residual,x = c(1:length(stu.residual)))) + geom_point()+ geom_line(y = 0,col = "red") + labs(x = "index",y= "Student residual") + geom_line()
+
+# Multicollinearity
+vif_i <- vif(m6)
+
+maxvif <- max(vif_i[,3])
+maxvif
+
+vif <- mean(vif_i[,3])
+vif
+```
+
+## Remedy the model
+
+Thus, in the qqplot and residual plot, there are three points anormly. We remove them to remedy the model. 
+
+The max of the largest VIF value among $VIF_i$ is not larger than 10, and the mean vif is not considerablygreater than 1, but nearly equal to 1, so there is not multicollinearity.
+
+
+```{r}
+
+new <- BodyFat_clean[-39,]
+
+m <- lm(BODYFAT ~ AGE.GROUP +  log(ABDOMEN) + log(WRIST),data = new)
+
+summary(m)
+
+stu.residual <- rstudent(m)
+
+# normality
+qqPlot(stu.residual , main="qq plot", col="blue", col.lines="red",xlab = "Theoretical Quantiles",ylab = "Student residual")
+
+# equal variance and linearity
+ggplot( mapping = aes(x = m$fitted.values, y = stu.residual)) + geom_point() + geom_line(y = 0,col = "red") + labs(x = "fitted.values",y= "Student residual")
+
+# outiler
+cook <- cooks.distance(m)
+head(sort(cook,decreasing = TRUE)) # Rule of Thumb is to compare cook distance with 1
+
+
+```
+
+Compare the initial model, the coefficient just change a little, and the plots also does not change much. We can conclude that those points are not influential. Thus, we do not need to change the model.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
