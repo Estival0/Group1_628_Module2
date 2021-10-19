@@ -5,9 +5,9 @@ This github gives all of things about we do for module2. In the Rmd, it contains
 
 There are two data sets. BodyFat is the raw data, and BodyFat_cleaned is the cleaning data. The steps and explanation of data cleaning are all in beginning of the Rmd and HTML.
 
-What is more, we also upload our shiny APP code in the file. If you have any questions about how we implement this APP and how this calculator APP runs, you could see the details of its R code.
+What is more, we also upload our shiny APP code in the file of Group1App. If you have any questions about how we implement this APP and how this calculator APP runs, you could see the details of its R code.
 
-And we give the two pages summary to summarize what we do and what we find in the PDF. It describes how we choose model, what we can do with our model, and the strength and weakness of our model.
+And we give the two pages summary to summarize what we do and what we find in 628_module2_Summary_Group1.pdf. It describes how we choose model, what we can do with our model, and the strength and weakness of our model.
 
 If you have any problems with our work, you could connect us by the github or the information of our group member:
 Qizheng Xia, e-mail: qxia25@wisc.edu
