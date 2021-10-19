@@ -1,0 +1,11 @@
+name: group1app
+title:
+username:
+account: 628-module2-app
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 4901604
+bundleId: 5152406
+url: https://628-module2-app.shinyapps.io/group1app/
+when: 1634604992.38206
+lastSyncTime: 1634604992.38206
